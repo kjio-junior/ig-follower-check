@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy Policy — IG Follower Check</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background:#0f0f0f; color:#f5f5f5;
+           max-width: 720px; margin: 40px auto; padding: 0 16px; line-height: 1.6; }
+    h1, h2 { color: #fff; }
+    a { color: #0095f6; }
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy</h1>
+  <p><em>Last updated: <span id="date"></span></em></p>
+
+  <h2>1. Data We Collect</h2>
+  <p><strong>None.</strong> This application is fully client-side. The JSON files you
+  upload are read directly by your browser's JavaScript engine and are never
+  transmitted to any server. We do not use cookies, localStorage, analytics,
+  or any third-party tracking.</p>
+
+  <h2>2. How Your Files Are Processed</h2>
+  <p>When you select a file via the file input, the browser uses the
+  <code>FileReader</code> API to read it into memory locally. The parsed data
+  is used only to compute the set difference between your followers and
+  following lists. Closing or refreshing the tab clears everything.</p>
+
+  <h2>3. Third Parties</h2>
+  <p>The site is hosted on Vercel. Vercel may log standard HTTP request
+  metadata (IP address, user agent) as part of normal hosting operations.
+  See <a href="https://vercel.com/legal/privacy-policy">Vercel's Privacy Policy</a>.</p>
+
+  <h2>4. Your Rights</h2>
+  <p>Because we do not collect or store any personal data, there is nothing to
+  request, delete, or export. You retain full control of your Instagram data
+  export at all times.</p>
+
+  <h2>5. Contact</h2>
+  <p>Questions? Open an issue on the GitHub repository.</p>
+
+  <p><a href="/">← Back to app</a></p>
+  <script>document.getElementById('date').textContent = new Date().toISOString().split('T')[0];</script>
+</body>
+</html>
