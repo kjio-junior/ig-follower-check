@@ -177,6 +177,11 @@
     <button onclick="compareLists()">Find Who Doesn't Follow Back</button>
   </div>
 
+  <div class="card" id="previewCard" style="font-size:0.9rem; color:#bbb;">
+    <div id="previewFollowers" style="margin-bottom:6px;">followers_1.json: <em>not uploaded</em></div>
+    <div id="previewFollowing">following.json: <em>not uploaded</em></div>
+  </div>
+
   <div id="results"></div>
 
   <footer>
@@ -192,14 +197,86 @@
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    async function parseJsonFile(inputElement) {
-      const file = inputElement.files[0];
+    /**
+     * Extract usernames from any Instagram/Meta JSON export schema.
+     * Prioritizes explicit `value` fields; falls back to href parsing.
+     */
+    function extractUsernames(data) {
+      const out = new Set();
+
+      const tryAdd = (v) => {
+        if (typeof v !== 'string') return;
+        const clean = v.trim().replace(/^@/, '');
+        if (!clean) return;
+        if (clean.length > 100) return;
+        if (/[\s/?#]/.test(clean)) return;
+        out.add(clean);
+      };
+
+      const fromHref = (href) => {
+        if (typeof href !== 'string') return;
+        const m = href.match(/instagram\.com\/([^/?#]+)/i);
+        if (m) tryAdd(m[1]);
+      };
+
+      function walk(node) {
+        if (!node || typeof node !== 'object') return;
+
+        if (Array.isArray(node)) {
+          for (const item of node) walk(item);
+          return;
+        }
+
+        // 1) Classic: { string_list_data: [{ value, href, timestamp }] }
+        if (Array.isArray(node.string_list_data)) {
+          for (const s of node.string_list_data) {
+            if (!s) continue;
+            if (typeof s.value === 'string' && s.value.trim()) {
+              tryAdd(s.value);
+            } else {
+              fromHref(s.href);
+            }
+          }
+        }
+
+        // 2) Newer: { label_values: [{ title: "Username", value }] }
+        if (Array.isArray(node.label_values)) {
+          for (const lv of node.label_values) {
+            if (!lv) continue;
+            const t = String(lv.title || lv.label || '').toLowerCase();
+            if (t.includes('user')) tryAdd(lv.value);
+          }
+        }
+
+        // 3) Any stray profile href
+        if (typeof node.href === 'string') fromHref(node.href);
+
+        for (const key of Object.keys(node)) walk(node[key]);
+      }
+
+      walk(data);
+      return [...out];
+    }
+
+    async function parseJsonFile(inputEl) {
+      const file = inputEl.files[0];
       if (!file) return null;
-      const text = await file.text();
-      return JSON.parse(text);
+      return JSON.parse(await file.text());
+    }
+
+    function renderPreview(containerId, list, label) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      if (!list || list.length === 0) {
+        el.innerHTML = `<strong>${label}:</strong> <span style="color:#f88">0 usernames found — check the file shape</span>`;
+        return;
+      }
+      const head = list.slice(0, 3).map(u => `@${u}`).join(', ');
+      el.innerHTML = `<strong>${label}:</strong> ${list.length} parsed → ${head}${list.length > 3 ? ', …' : ''}`;
     }
 
     async function compareLists() {
+      const container = document.getElementById('results');
       try {
         const followersData = await parseJsonFile(document.getElementById('followersInput'));
         const followingData = await parseJsonFile(document.getElementById('followingInput'));
@@ -209,28 +286,45 @@
           return;
         }
 
-        const followers = new Set(
-          followersData.map(item => item.string_list_data[0].value)
-        );
+        const followersList = extractUsernames(followersData);
+        const followingList = extractUsernames(followingData);
 
-        const followingList = followingData.relationships_following.map(
-          item => item.string_list_data[0].value
-        );
+        renderPreview('previewFollowers', followersList, 'followers_1.json');
+        renderPreview('previewFollowing', followingList, 'following.json');
 
-        const notFollowingBack = followingList.filter(user => !followers.has(user));
+        console.log('followers parsed:', followersList);
+        console.log('following parsed:', followingList);
+        console.log('raw followers json:', followersData);
+        console.log('raw following json:', followingData);
 
-        const container = document.getElementById('results');
-        container.innerHTML = `<div class="card"><h3>Not Following You Back (${notFollowingBack.length})</h3><ul>` +
-          notFollowingBack.map(user => `
-            <li>
-              <span>@${user}</span>
-              <a href="https://instagram.com/${user}" target="_blank" rel="noopener">Open Profile</a>
-            </li>
-          `).join('') +
+        if (followersList.length === 0 || followingList.length === 0) {
+          container.innerHTML = `<div class="card" style="border-color:#633">
+            <h3 style="color:#f88">Couldn't parse one of the files</h3>
+            <p>Check the preview above and the browser console (F12) for the raw data.</p>
+          </div>`;
+          return;
+        }
+
+        const followerSet = new Set(followersList);
+        const notFollowingBack = followingList.filter(u => !followerSet.has(u));
+
+        container.innerHTML =
+          `<div class="card"><h3>Not Following You Back (${notFollowingBack.length})</h3><ul>` +
+          notFollowingBack
+            .map(u => `
+              <li>
+                <span>@${u}</span>
+                <a href="https://instagram.com/${encodeURIComponent(u)}" target="_blank" rel="noopener">Open Profile</a>
+              </li>`)
+            .join('') +
           '</ul></div>';
       } catch (err) {
-        alert('Error parsing files. Make sure you uploaded the correct JSON exports from Instagram.');
         console.error(err);
+        container.innerHTML = `<div class="card" style="border-color:#633">
+          <h3 style="color:#f88">Error</h3>
+          <pre style="white-space:pre-wrap;color:#f88">${err.message}</pre>
+          <p>Open the console (F12) for details.</p>
+        </div>`;
       }
     }
   </script>
