@@ -26,7 +26,7 @@ Your files never leave your machine.
 5. Wait 5–15 minutes for the download link
 6. Extract the ZIP — you need `followers_1.json` and `following.json`
 
-## Local development
+## 🧑‍💻 Local development
 
 No build step. Just serve the folder:
 
@@ -40,7 +40,34 @@ npx serve .
 
 Then open http://localhost:8000
 
-##  Safety note on unfollowing
+## ☁️ Deploy to Vercel
+
+### Option A — Vercel dashboard (easiest)
+
+1. Push this repo to GitHub.
+2. Go to [vercel.com/new](https://vercel.com/new) and import the repo.
+3. Framework preset: **Other**. Leave build/output settings blank.
+4. Click **Deploy**. Done.
+
+### Option B — Vercel CLI
+
+```bash
+npm i -g vercel
+vercel
+```
+
+## 📂 Project structure
+
+```
+.
+├── index.html      # main app
+├── privacy.html    # privacy policy
+├── terms.html      # terms of use
+├── vercel.json     # static hosting config
+└── README.md
+```
+
+## ⚠️ Safety note on unfollowing
 
 Don't mass-unfollow. Instagram rate-limits at roughly **30–50 unfollows per
 hour** before issuing a temporary "Action Block". Spread cleanup across
